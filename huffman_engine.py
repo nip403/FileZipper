@@ -285,7 +285,36 @@ def decompress(infile, outfile=None):
         logger.log("error", "An unexpected error occurred: ", "".join(traceback.format_exception(*sys.exc_info())))
 
 def string_compress(string):
-    pass
+    tree = Tree(string) # builds huffman tree
+    tree.build_tree()
+
+    cm = Char_map() # creates lookup table
+    tree.get_code(cm)
+    char_map = cm.cm
+
+    compressed = "" # creates compressed string
+    for i in string:
+        compressed += char_map[i]
+
+    print("Compressed string:", compressed)
 
 def string_decompress(string):
-    pass
+    uncompressed = ""
+
+    string, data_bytes = string[:-16], string[-16:] # gets last 2 bytes from data
+    tree, string, encoding = io._get_tree(string, data_bytes) # decodes tree data and returns rest of data
+
+    if is_file:
+        string = "".join(list(map(str,np.fromfile(string,"u1"))))
+
+    for i in string:
+        if i == "1":
+            current = current.right
+        else:
+            current = current.left
+
+        if type(current) == Leaf_node:
+            uncompressed += current.val
+            current = tree.root
+
+    return uncompressed
