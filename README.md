@@ -1,5 +1,5 @@
-# Huffman-Trees
-A compression algorithm written in Python 3.x.
+# Nipzip
+My implementation of a compression algorithm written in Python 3.x using Huffman coding.
 
 [Huffman Coding](https://en.wikipedia.org/wiki/Huffman_coding) is commonly used for lossless compression. Program compresses and decompresses text to binary and vice versa.
 
