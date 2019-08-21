@@ -1,0 +1,48 @@
+VERSION INFO
+
+> (1)
+1.0 - working huffman tree for de/compression
+1.1 - string de/compression functional
+1.2 - output stored in text file
+
+> (2)
+2.0 - writing in binary
+2.1 - tree data now stored in file, decoding not implemented
+2.2 - added support for all unicode and ASCII encoding
+2.3 - decoding using table from file
+
+> (3)
+3.0 - using command line options to encode
+3.1 - working file management, error detection
+3.2 - added optparse parser implemenation
+3.3 - added debugging mode, logger
+3.4 - added verbose mode, displays char maps/trees, encodings
+3.5 - added override mode, warns by default
+3.6 - added help message, aesthetic improvements
+3.7 - comments, improved error handling
+
+> (4)
+4.0 - moved old 
+/======\
+| TODO |
+\======/
+
+- Add support for gui interface, add -g option (exclusive)
+- optimisation with numpy - decode
+- support for multiple file types about 100 are letters
+- change reformat bin func to only do scalars
+- optimise ascii to use unused digits (only)
+    - maybe use spare bit for capitals
+- support for all text & code extensions
+    - Add byte at the end to support extension type
+- Display before & after file sizes, compression efficiency
+- Force install 'bitarray' module within script
+- Implement builtin bytearray type in huffman_io_engine._get_tree for faster r/w
+- make character storage dynamic
+    - therefore max storage for data byte is a nibble
+    - Revamp entire decompression program to accommodate for nibbles
+
+
+
+
+
