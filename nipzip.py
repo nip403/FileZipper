@@ -28,9 +28,12 @@ Options:
 """
 
 import huffman_engine as engine
+import huffman_io_engine as _engine
 from optparse import OptionParser, OptionGroup
 import os.path
 import sys
+
+engine = type("engine", (), {"main": engine, "helper": _engine})
 
 class BasicLogger:
     def __init__(self, debug=False, logs=[]):
@@ -48,7 +51,7 @@ class BasicLogger:
 
     def log(self, level, *content):
         if level.lower() not in self.levels:
-            raise ValueError(f"Invalid logger level: '{level}'")
+            raise Exception(f"Invalid logger level: '{level}'")
 
         self.logs.append((level, *content))
 
@@ -69,10 +72,13 @@ class BasicLogger:
         self.logs.append((level, *args))
         
 def init_parser():
-    parser = OptionParser("""py nipzip.py [options]
+    parser = OptionParser("""\
+py nipzip.py [options]
 
     Notes:
-        - Can only use one option at a time.""")
+        - Can only use one option at a time
+        - If using string mode, delimit string with quotes if it contains a space
+""")
 
     fileopts = OptionGroup(parser, "File Options")
     stringopts = OptionGroup(parser, "String Options")
@@ -128,6 +134,7 @@ def init_parser():
         help="Full path to destination file - if not provided, will create a file with the same name as source file in the same directory"
     )
     ####
+    
     parser.add_option_group(fileopts)
     parser.add_option_group(stringopts)
     parser.add_option_group(debugopts)
@@ -149,7 +156,8 @@ def parse_cmd(argv):
     d_string = opts.bin
 
     logger = BasicLogger(debug)
-    engine.logger = logger
+    engine.main.logger = logger
+    engine.helper.logger = logger
 
     for arg in args:
         logger.log("warn", f"'{arg}' is not a valid argument")
@@ -162,21 +170,25 @@ def parse_cmd(argv):
             logger.log("error", "Source file does not exist - try checking if its the correct full path")
 
         
-        engine.verbose = verbose
-        engine.debug = debug
-        engine.override = override
+        engine.main.verbose = verbose
+        engine.main.debug = debug
+        engine.main.override = override
+
+        engine.helper.verbose = verbose
+        engine.helper.debug = debug
+        engine.helper.override = override
 
         if os.path.splitext(source)[1] == ".bin":
             if dest and not os.path.splitext(dest)[1] == ".txt":
                 logger.log("error", "Invalid destination file extension")
 
-            return "d", source, dest, logger
+            return "d", "FILE", source, dest, logger
         
         elif os.path.splitext(source)[1] in [".txt", ".py"]:
             if dest and not os.path.splitext(dest)[1] == ".bin":
                 logger.log("error", "Invalid destination file extension")
             
-            return "e", source, dest, logger
+            return "c", "FILE", source, dest, logger
 
         else:
             logger.log("error", "Error not caught, program exiting")
@@ -189,20 +201,23 @@ def parse_cmd(argv):
             logger.log("error", "Only one mode can be used at a time")
 
         if c_string:
-            return "e", c_string, "STRING_MODE"
+            return "c", "STRING", c_string, None, logger
 
         elif d_string:
-            return "d", d_string, "STRING_MODE"
+            return "d", "STRING", d_string, None, logger
 
-def main(mode, infile, outfile):
+def main(mode, fmt, infile, outfile, logger):
     logger.log("info", "Command parsed, executing program")
+
+    if not mode in "cd" or not fmt in ["STRING", "FILE"] or not infile or not logger:
+        raise NameError("Invalid args for main()")
     
-    if outfile == "STRING_MODE":
-        {"e":engine.string_compress,
-         "d":engine.string_decompress}[mode](infile)
-    else:
-        {"e":engine.compress,
-         "d":engine.decompress}[mode](infile, outfile)
+    if fmt == "STRING":
+        {"c":engine.main.string_compress,
+         "d":engine.main.string_decompress}[mode](infile)
+    elif fmt == "FILE":
+        {"c":engine.main.compress,
+         "d":engine.main.decompress}[mode](infile, outfile)
 
     logger.forcelog("info", f"{'Compression' if mode == 'e' else 'Decompression'} successful, program has exited.")
     sys.exit()
