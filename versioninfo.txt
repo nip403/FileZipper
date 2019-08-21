@@ -22,27 +22,35 @@ VERSION INFO
 3.7 - comments, improved error handling
 
 > (4)
-4.0 - moved old 
+4.0 - added legacy string de/compression modes
+
 /======\
 | TODO |
 \======/
 
-- Add support for gui interface, add -g option (exclusive)
+----> optimisation
 - optimisation with numpy - decode
-- support for multiple file types about 100 are letters
-- change reformat bin func to only do scalars
 - optimise ascii to use unused digits (only)
     - maybe use spare bit for capitals
-- support for all text & code extensions
-    - Add byte at the end to support extension type
-- Display before & after file sizes, compression efficiency
-- Force install 'bitarray' module within script
 - Implement builtin bytearray type in huffman_io_engine._get_tree for faster r/w
 - make character storage dynamic
     - therefore max storage for data byte is a nibble
     - Revamp entire decompression program to accommodate for nibbles
 
+----> high priority
+- fix string decompression function
+- finish commenting on nippify.py and building huffman process
+- add examples to github & include tests in readme
 
+----> med priority
+- make overload decorator
+    - overload main in nippify and de/compression functions
+- Display before & after file sizes, compression efficiency
 
-
-
+----> low priority
+- Add support for gui interface, add -g option (exclusive)
+- change reformat bin func to only do scalars
+- support for all text & code extensions
+    - Add byte at the end to support extension type
+- Force install 'bitarray' module within script
+- make it into bash/cmd program - pyinstaller
