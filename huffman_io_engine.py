@@ -165,3 +165,6 @@ def _get_tree(string, data_bytes): # decodes binary tree data from file data and
     # returns encoding for verbose mode
     # sorts tree by longest code first
     return sorted(tree.items(), key=lambda p: len(p[0]), reverse=True), "".join(bytearr), encoding
+
+def is_bin(string): # checks if string represents binary
+    return all(i in "01" for i in string)
