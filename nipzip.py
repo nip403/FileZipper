@@ -35,6 +35,7 @@ import sys
 
 engine = type("engine", (), {"main": engine, "helper": _engine})
 
+# basic logger for debugging
 class BasicLogger:
     def __init__(self, debug=False, logs=[]):
         self.logs = logs
@@ -55,7 +56,7 @@ class BasicLogger:
 
         self.logs.append((level, *content))
 
-        if self.levels[level.lower()]:
+        if self.levels[level.lower()]: # if log is fatal or error will forcelog
             print("LOGGER."+level.upper()+":", *content)
             sys.exit()
 
@@ -71,20 +72,21 @@ class BasicLogger:
     def silentlog(self, level, *args): # doesn't raise error
         self.logs.append((level, *args))
         
-def init_parser():
+def init_parser(): 
+    # help message
     parser = OptionParser("""\
 py nipzip.py [options]
 
     Notes:
         - Can only use one option at a time
         - If using string mode, delimit string with quotes if it contains a space
+        - Verbose and override flags only available with file mode
 """)
 
     fileopts = OptionGroup(parser, "File Options")
     stringopts = OptionGroup(parser, "String Options")
     debugopts = OptionGroup(parser, "Debug Options")
 
-    ####
     stringopts.add_option(
         "--compress",
         dest="text",
@@ -97,7 +99,7 @@ py nipzip.py [options]
         default=False,
         help="Decodes a string and outputs decompressed string"
     )
-    ####
+
     debugopts.add_option(
         "-v",
         "--verbose",
@@ -114,7 +116,7 @@ py nipzip.py [options]
         default=False,
         help="Debug mode: display logging info"
     )
-    ####
+
     fileopts.add_option(
         "-o",
         "--override",
@@ -133,7 +135,6 @@ py nipzip.py [options]
         dest="dest",
         help="Full path to destination file - if not provided, will create a file with the same name as source file in the same directory"
     )
-    ####
     
     parser.add_option_group(fileopts)
     parser.add_option_group(stringopts)
@@ -145,6 +146,7 @@ def parse_cmd(argv):
     parser = init_parser()
     opts,args = parser.parse_args()
 
+    # fetching options
     verbose = opts.verbose
     debug = opts.debug
     override = opts.override
@@ -155,40 +157,46 @@ def parse_cmd(argv):
     c_string = opts.text
     d_string = opts.bin
 
+    # setting options
     logger = BasicLogger(debug)
     engine.main.logger = logger
     engine.helper.logger = logger
+
+    engine.main.verbose = verbose
+    engine.main.debug = debug
+
+    engine.helper.verbose = verbose
+    engine.helper.debug = debug
+
+    # validation checks for improper use
+    logger.log("info", "Checking for bitarray module")
+    engine.helper.validate_bitarr()
+    engine.main.safe_import()
 
     for arg in args:
         logger.log("warn", f"'{arg}' is not a valid argument")
 
     if source:
+        engine.main.override = override
+        engine.helper.override = override
+
         if c_string or d_string:
             logger.log("error", "Can't provide both string and filename")
 
         if not os.path.exists(source):
             logger.log("error", "Source file does not exist - try checking if its the correct full path")
 
-        
-        engine.main.verbose = verbose
-        engine.main.debug = debug
-        engine.main.override = override
-
-        engine.helper.verbose = verbose
-        engine.helper.debug = debug
-        engine.helper.override = override
-
         if os.path.splitext(source)[1] == ".bin":
             if dest and not os.path.splitext(dest)[1] == ".txt":
                 logger.log("error", "Invalid destination file extension")
 
-            return "d", "FILE", source, dest, logger
+            return "d", source, dest, logger
         
         elif os.path.splitext(source)[1] in [".txt", ".py"]:
             if dest and not os.path.splitext(dest)[1] == ".bin":
                 logger.log("error", "Invalid destination file extension")
             
-            return "c", "FILE", source, dest, logger
+            return "c", source, dest, logger
 
         else:
             logger.log("error", "Error not caught, program exiting")
@@ -201,23 +209,18 @@ def parse_cmd(argv):
             logger.log("error", "Only one mode can be used at a time")
 
         if c_string:
-            return "c", "STRING", c_string, None, logger
+            return "c", c_string, "STRING", logger
 
         elif d_string:
-            return "d", "STRING", d_string, None, logger
+            return "d", d_string, "STRING", logger
 
-def main(mode, fmt, infile, outfile, logger):
+def main(mode, infile, outfile, logger):
     logger.log("info", "Command parsed, executing program")
 
-    if not mode in "cd" or not fmt in ["STRING", "FILE"] or not infile or not logger:
+    if not mode in "cd" or not infile or not logger:
         raise NameError("Invalid args for main()")
     
-    if fmt == "STRING":
-        {"c":engine.main.string_compress,
-         "d":engine.main.string_decompress}[mode](infile)
-    elif fmt == "FILE":
-        {"c":engine.main.compress,
-         "d":engine.main.decompress}[mode](infile, outfile)
+    {"c":engine.main.compress,"d":engine.main.decompress}[mode](infile, outfile)
 
     logger.forcelog("info", f"{'Compression' if mode == 'e' else 'Decompression'} successful, program has exited.")
     sys.exit()
