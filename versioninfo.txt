@@ -23,10 +23,16 @@ VERSION INFO
 
 > (4)
 4.0 - added legacy string de/compression modes
+4.1 - merged string and file functions
+4.2 - now installs 'bitarray' module within script (with admin rights) if not present
 
 /======\
 | TODO |
 \======/
+
+----> github
+- add examples to github & include tests in readme
+- instructions for setup & execution for windows
 
 ----> optimisation
 - optimisation with numpy - decode
@@ -38,19 +44,19 @@ VERSION INFO
     - Revamp entire decompression program to accommodate for nibbles
 
 ----> high priority
-- fix string decompression function
-- finish commenting on nippify.py and building huffman process
-- add examples to github & include tests in readme
+- update de/compression process to use module functions encode/decode
 
 ----> med priority
 - make overload decorator
     - overload main in nippify and de/compression functions
-- Display before & after file sizes, compression efficiency
+- add compression ratio for strings
 
 ----> low priority
 - Add support for gui interface, add -g option (exclusive)
 - change reformat bin func to only do scalars
 - support for all text & code extensions
     - Add byte at the end to support extension type
-- Force install 'bitarray' module within script
 - make it into bash/cmd program - pyinstaller
+- add support for linux
+- make nip editor with custom extension, replace nip gui
+- portability with python 2
