@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 import huffman_io_engine as io
-from bitarray import bitarray
 import numpy as np
+import traceback
 import os.path
 import sys
-import traceback
+
+def safe_import():
+    global bitarray
+    from bitarray import bitarray
 
 INDENT = "\t"
 
+# Node contains leaf_node or node children
 class Node:
     def __init__(self):
         self.left = None
@@ -15,51 +19,58 @@ class Node:
         self.freq = None
         self.label = "Node"
 
-    def _print(self,recursion_depth):
-        print(f"{INDENT*recursion_depth}label: {self.label}")
-        print(f"{INDENT*recursion_depth}freq: {self.freq}")
-        
-        self.right._print(recursion_depth+1)
-        self.left._print(recursion_depth+1)
-
-    def generate_code(self,code):
+    # recursively generates code identifier up to each leaf node
+    def generate_code(self, code):
         if type(self.right) == Leaf_node:
-            setattr(self.right,"code",code+"1")
+            setattr(self.right, "code", code+"1")
         elif not self.right is None:
             self.right.generate_code(code+"1")
 
         if type(self.left) == Leaf_node:
-            setattr(self.left,"code",code+"0")
+            setattr(self.left, "code", code+"0")
         elif not self.left is None:
             self.left.generate_code(code+"0")
 
-    def get_code(self,cm):
+    # fetches code recursively but stores in an object as to not deal with return values
+    def get_code(self, cm):
         if not self.right is None:
             self.right.get_code(cm)
         if not self.left is None:
             self.left.get_code(cm)
 
+    # for display the tree
+    def __str__(self, recursion_depth):
+        print(f"{INDENT*recursion_depth}label: {self.label}")
+        print(f"{INDENT*recursion_depth}freq: {self.freq}")
+        
+        print(self.left.__str__(recursion_depth+1))
+        print(self.right.__str__(recursion_depth+1))
+
+        return f"{INDENT*recursion_depth}|endnode|"
+        
 class Leaf_node:
-    def __init__(self,val,freq):
+    def __init__(self, val, freq):
         self.val = val
         self.freq = freq
 
-    def _print(self,recursion_depth):
-        print(f"{INDENT*recursion_depth}{'-'*20}")
-        print(f"{INDENT*recursion_depth}label: '{self.val}'")
-        print(f"{INDENT*recursion_depth}freq: {self.freq}")
-        print(f"{INDENT*recursion_depth}code: {self.code}")
-        print(f"{INDENT*recursion_depth}{'-'*20}")
+    def __str__(self, recursion_depth):
+        return f"""\
+{INDENT*recursion_depth}{'-'*20}
+{INDENT*recursion_depth}label: '{self.val}'
+{INDENT*recursion_depth}freq: {self.freq}
+{INDENT*recursion_depth}code: {self.code}
+{INDENT*recursion_depth}{'-'*20}"""
 
-    def get_code(self,cm):
+    def get_code(self, cm):
         cm.cm[self.val] = self.code
 
 class Tree:
-    def __init__(self,string):
+    def __init__(self, string):
         self._freq = freq_table(string)
         self.table = self._freq.table
 
     def build_tree(self):
+        # makes a leaf node for every unique character
         queue = [Leaf_node(k,v) for k,v in self.table.items()] # node priority queue
 
         while not len(queue) < 3:
@@ -74,17 +85,18 @@ class Tree:
                 node.left = s2
                 node.right = s1
 
-            node.freq = sum([node.left.freq,node.right.freq])
+            node.freq = sum([node.left.freq, node.right.freq])
 
+            # maintains a queue ordered by (total) frequency
             _append = False
             index = 0
             while index < len(queue):
                 if queue[index].freq < node.freq:
-                    queue.insert(index,node)
+                    queue.insert(index, node)
                     break
 
                 index += 1
-            else:
+            else: # if node is the lowest, while loop wouldn't have broken
                 _append = True
 
             if _append:
@@ -96,31 +108,35 @@ class Tree:
         
         self.root.right = queue[0]
 
+        # accommodates for only one child left
         if not len(queue) == 1:
             self.root.left = queue[1]
             
+        # generates code for all leaves 
         self.root.generate_code("")
 
-    def get_code(self,cm):
+    def get_code(self, cm):
         self.root.get_code(cm)
 
-    def display(self):
-        self.root._print(0)
+    def __str__(self):
+        return self.root.__str__(0)
 
 class freq_table:
-    def __init__(self,string):
+    def __init__(self, string):
         self.all_freq = {}
         self.sorted_freq = {}
         self.string = string
         self._init()
 
     def _init(self):
+        # creates a character to frequency table
         for char in self.string:
             if not char in self.all_freq.keys():
                 self.all_freq[char] = 1
             else:
                 self.all_freq[char] += 1
 
+        # sorts by frequency to optimise (binary) code length
         while self.all_freq:
             for k,v in self.all_freq.items():
                 if v == max(self.all_freq.values()):
@@ -143,7 +159,7 @@ class Char_map:
 ######################################################################################
 
 '''
-structure of file:
+structure of bin file:
     tree
     filler bits
     compressed text
@@ -157,14 +173,25 @@ structure of file:
 '''
 
 def compress(infile, outfile=None):
+    str_mode = outfile == "STRING"
+
     try:
-        logger.log("info", f"Reading data from '{os.path.abspath(infile)}'")
+        if not str_mode:
+            infile = os.path.abspath(infile)
+            logger.log("info", f"Reading data from '{infile}'")
+
+            if verbose:
+                print(f"File size before compression: ~ {io.formatsize(os.path.getsize(infile))}")
         
-        with open(infile, "r") as f:
-            string = f.read()
+            with open(infile, "r") as f:
+                string = f.read()
 
-        logger.log("info", f"Data read successfully; building Huffman Tree")
-
+            logger.log("info", f"Data read successfully; building Huffman Tree")
+        
+        else:
+            string = infile
+            logger.log("info", f"Building Huffman Tree")
+        
         tree = Tree(string) # contructs huffman tree recursively
         tree.build_tree()
 
@@ -178,7 +205,7 @@ def compress(infile, outfile=None):
         treedata, amount_of_chars, max_len_code = io._encode_tree(char_map, encoding)
 
         if verbose:
-            tree.display()
+            print(tree)
             print("Encoding:", {
                 "00": "ASCII",
                 "01": "UTF-8",
@@ -201,36 +228,54 @@ def compress(infile, outfile=None):
              encoding]
         )
 
-        if outfile is None:
-            outfile = os.path.splitext(infile)[0] + ".bin" # creates outfile destination if not provided
-            
-        if (not override and os.path.exists(outfile)): # warn user if file already exists
-            io.warn_override_file(outfile, logger)
+        if not str_mode:
+            if outfile is None:
+                outfile = os.path.splitext(infile)[0] + ".bin" # creates outfile destination if not provided
+                
+            if (not override and os.path.exists(outfile)): # warn user if file already exists
+                io.warn_override_file(outfile, logger)
 
-        logger.log("info", f"Writing to '{os.path.abspath(outfile)}'")
+            logger.log("info", f"Writing to '{os.path.abspath(outfile)}'")
 
-        if verbose:
-            print("Compressed data:")
-            
-            if len(bitarr) <= 1000:
-                print(("="*20)+">", bitarr, ("="*20)+">", sep="\n")
-            else:
-                print(("="*20)+">", bitarr[:500], "\n\t...\n" , bitarr[-500:], ("="*20)+">", sep="\n")
-            
-        with open(outfile,"wb+") as f:
-            bitarr.tofile(f)
+            if verbose:
+                print("Compressed data:")
+                
+                if len(bitarr) <= 1000:
+                    print(("="*20)+">", bitarr, ("="*20)+">", sep="\n")
+                else:
+                    print(("="*20)+">", "".join(map(lambda i: str(int(i)),bitarr[:500])), "\n\t...\n" , "".join(map(lambda i: str(int(i)),bitarr[-500:])), ("="*20)+">", sep="\n")
+                
+            with open(outfile, "wb+") as f:
+                bitarr.tofile(f)
+
+            if verbose:
+                print(f"File size after compression: ~ {io.formatsize(os.path.getsize(outfile))}")
+                print(f"Compression ratio: {os.path.getsize(infile)/os.path.getsize(outfile)}")
+
+        else:
+            print("Compressed data:\n", "="*40, sep="")
+            print("".join(map(lambda i: str(int(i)),bitarr)), "="*40, sep="\n")
             
     except Exception as e:
         logger.log("error", "An unexpected error occurred: ", "".join(traceback.format_exception(*sys.exc_info())))
 
 def decompress(infile, outfile=None):
+    str_mode = outfile == "STRING"
+
     try:
-        logger.log("info", f"Reading data from '{os.path.abspath(infile)}'")
-
         uncompressed = ""
-        string = "".join(io._reformat_bin(list(map(str,np.fromfile(infile,"u1"))))) # reads int from file and converts it to binary
 
-        logger.log("info", f"Data read successfully; constructing table for lookup.")
+        if not str_mode:
+            if verbose:
+                print(f"File size before decompression: ~ {io.formatsize(os.path.getsize(infile))}")
+
+            logger.log("info", f"Reading data from '{os.path.abspath(infile)}'")
+            string = "".join(io._reformat_bin(list(map(str, np.fromfile(infile, "u1"))))) # reads int from file and converts it to binary
+            logger.log("info", f"Data read and parsed successfully; constructing lookup table.")
+
+        else:
+            string = infile
+            logger.log("info", "Constructing lookup table")
 
         string, data_bytes = string[:-16], string[-16:] # gets last 2 bytes from data
         tree, string, encoding = io._get_tree(string, data_bytes) # decodes tree data and returns rest of data
@@ -262,59 +307,34 @@ def decompress(infile, outfile=None):
             else: # in the case where character does not exist
                 logger.log("fatal", "Error decoding - code not found in string; exiting.")
 
-        if outfile is None:
-            outfile = os.path.splitext(infile)[0] + ".txt" # creates outfile destination if not provided
+        if not str_mode:
+            if outfile is None:
+                outfile = os.path.splitext(infile)[0] + ".txt" # creates outfile destination if not provided
 
-        if (not override and os.path.exists(outfile)): # warns user if file already exists
-            io.warn_override_file(outfile, logger)
+            if (not override and os.path.exists(outfile)): # warns user if file already exists
+                io.warn_override_file(outfile, logger)
 
-        logger.log("info", f"Uncompressed string formed; writing to '{os.path.abspath(outfile)}'")
+            logger.log("info", f"Uncompressed string formed; writing to '{os.path.abspath(outfile)}'")
 
-        if verbose:
-            print("Uncompressed text:")
-            
-            if len(uncompressed) <= 1000:
-                print(("="*20)+">", uncompressed, ("="*20)+">", sep="\n")
-            else:
-                print(("="*20)+">", uncompressed[:500], "\n\t...\n" , uncompressed[-500:], ("="*20)+">", sep="\n")
-            
-        with open(outfile, "w+") as f:
-            f.write(uncompressed)
+            if verbose:
+                print("Raw text:")
+                
+                if len(uncompressed) <= 1000:
+                    print(("="*20)+">", uncompressed, ("="*20)+">", sep="\n")
+                else:
+                    print(("="*20)+">", uncompressed[:500], "\n\t...\n" , uncompressed[-500:], ("="*20)+">", sep="\n")
+                
+            with open(outfile, "w+") as f:
+                f.write(uncompressed)
+
+            if verbose:
+                print(f"File size after decompression: ~ {io.formatsize(os.path.getsize(outfile))}")
+                print(f"Compression ratio: {os.path.getsize(outfile)/os.path.getsize(infile)}")
+        
+        else:
+            print("Decompressed data:\n", "="*40, sep="")
+            print(uncompressed, "="*40, sep="\n")
 
     except:
         logger.log("error", "An unexpected error occurred: ", "".join(traceback.format_exception(*sys.exc_info())))
 
-def string_compress(string):
-    tree = Tree(string) # builds huffman tree
-    tree.build_tree()
-
-    cm = Char_map() # creates lookup table
-    tree.get_code(cm)
-    char_map = cm.cm
-
-    compressed = "" # creates compressed string
-    for i in string:
-        compressed += char_map[i]
-
-    print("Compressed string:", compressed)
-
-def string_decompress(string):
-    uncompressed = ""
-
-    string, data_bytes = string[:-16], string[-16:] # gets last 2 bytes from data
-    tree, string, encoding = io._get_tree(string, data_bytes) # decodes tree data and returns rest of data
-
-    if is_file:
-        string = "".join(list(map(str,np.fromfile(string,"u1"))))
-
-    for i in string:
-        if i == "1":
-            current = current.right
-        else:
-            current = current.left
-
-        if type(current) == Leaf_node:
-            uncompressed += current.val
-            current = tree.root
-
-    return uncompressed
