@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os.path
+import subprocess
 import sys
+import math
 
 # used when -o flag is not set
 def warn_override_file(file, logger):
@@ -24,6 +26,48 @@ def display_dict(d, cols=2, gap=4, reverse=False):
             key, val = val, key
 
         print(f"{repr(key)}: {val}{' '*(max_len-len(key)-len(val)+gap)}", end="\n" if not (p+1)%cols else "")
+
+def formatsize(size): # formats bytes into readable format
+    sizes = [
+        "bytes",
+        "KB",
+        "MB",
+        "GB",
+        "TB"
+    ]
+    _size = 0
+
+    while len(str(size)) > 3:
+        size = math.ceil(size/1024)
+        _size += 1
+
+    return f"{round(size)}{sizes[_size]}"
+
+# check if user has bitarray, if not tries to install with pip
+def validate_bitarr():
+    try:
+        import bitarray
+    except:
+        logger.forcelog("warn", "Bitarray module not found. Trying pip")
+
+        try:
+            import pip
+        except:
+            logger.log("fatal", "Pip not found. Run code @ https://bootstrap.pypa.io/get-pip.py")
+
+        logger.forcelog("info", "Pip module found, attempting to download and install bitarray")
+        result = subprocess.call(['runas', '/user:Administrator', 'py -m pip install bitarray'])
+
+        if not result: # code 1 = wrong password, 0 = correct password
+            logger.log("error", "Administrator password entered incorrectly; exiting.")
+        else:
+            input("Escape once bitarray has installed: ")
+        
+    try:
+        import bitarray
+        logger.forcelog("info", "Success: bitarray module present")
+    except:
+        logger.log("fatal", "Unexpected error, bitarray module still not found after install; exiting.")
 
 #### #### #### #### COMPRESSION #### #### #### ####
 def _reformat_bin(arr, digits=8): # converts an array of ints to binary
