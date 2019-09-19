@@ -36,3 +36,6 @@ Options:
 ### Dependencies
 - Python 3.6 or older
 - _bitarray_ module (`pip install bitarray`)
+
+## todo tmp
+use base 63 bcd encoding (encode bin->base 63/62 ->binary(2 bits to determine case/number, 6 bits to determin value))
