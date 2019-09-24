@@ -60,6 +60,7 @@ def validate_bitarr():
 
         if not result: # code 1 = wrong password, 0 = correct password
             logger.log("error", "Administrator password entered incorrectly; exiting.")
+            sys.exit()
         else:
             input("Escape once bitarray has installed: ")
         
