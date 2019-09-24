@@ -38,7 +38,7 @@ class Node:
         if not self.left is None:
             self.left.get_code(cm)
 
-    # for display the tree
+    # to display the tree
     def __str__(self, recursion_depth):
         print(f"{INDENT*recursion_depth}label: {self.label}")
         print(f"{INDENT*recursion_depth}freq: {self.freq}")
