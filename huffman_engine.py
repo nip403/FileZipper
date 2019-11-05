@@ -160,16 +160,17 @@ class Char_map:
 
 '''
 structure of bin file:
-    tree
-    filler bits
-    compressed text
-    data byte
-        amount of labels/characters
-    data bytes
-        1st 6 digits
-            stores amount of bytes needed for max len code
-        last 2 digits: 
-            encoding (00=0=ascii, 01=1=utf8, 10=2=utf16, 11=3=utf32)
+    header:
+        tree
+        filler bits
+        data byte:
+            amount of labels/characters
+    data:
+        for each byte:
+            1st 6 digits
+                stores amount of bytes needed for max len code
+            last 2 digits: 
+                encoding (00=0=ascii, 01=1=utf8, 10=2=utf16, 11=3=utf32)
 '''
 
 def compress(infile, outfile=None):
@@ -337,4 +338,3 @@ def decompress(infile, outfile=None):
 
     except:
         logger.log("error", "An unexpected error occurred: ", "".join(traceback.format_exception(*sys.exc_info())))
-
