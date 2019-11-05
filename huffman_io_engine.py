@@ -56,19 +56,21 @@ def validate_bitarr():
             logger.log("fatal", "Pip not found. Run code @ https://bootstrap.pypa.io/get-pip.py")
 
         logger.forcelog("info", "Pip module found, attempting to download and install bitarray")
-        result = subprocess.call(['runas', '/user:Administrator', 'py -m pip install bitarray'])
+        subprocess.call([sys.executable, "-m", "pip", "install", "bitarray"])
 
-        if not result: # code 1 = wrong password, 0 = correct password
-            logger.log("error", "Administrator password entered incorrectly; exiting.")
-            sys.exit()
-        else:
-            input("Escape once bitarray has installed: ")
+        try:
+            import bitarray
+            logger.forcelog("info", "Success: bitarray module present")
+            return
+        except:
+            logger.forcelog("info", "Insufficient permissions to install bitarray, attempting administrative install")
+            subprocess.call(["runas", "/user:Administrator", sys.executable, "-m pip install bitarray"])
         
     try:
         import bitarray
         logger.forcelog("info", "Success: bitarray module present")
     except:
-        logger.log("fatal", "Unexpected error, bitarray module still not found after install; exiting.")
+        logger.log("fatal", "Unexpected error, bitarray module did not install; exiting.")
 
 #### #### #### #### COMPRESSION #### #### #### ####
 def _reformat_bin(arr, digits=8): # converts an array of ints to binary
