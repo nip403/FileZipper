@@ -144,7 +144,7 @@ py nipzip.py [options]
 
 def parse_cmd(argv):
     parser = init_parser()
-    opts,args = parser.parse_args()
+    opts, args = parser.parse_args()
 
     # fetching options
     verbose = opts.verbose
