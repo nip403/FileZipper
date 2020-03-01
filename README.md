@@ -34,6 +34,6 @@ Options:
 ```
 
 ### Dependencies
-- Python 3.6 or older
+- Python 3.6 or newer
 - _bitarray_ module (`pip install bitarray`)
 
