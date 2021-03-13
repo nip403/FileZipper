@@ -1,4 +1,5 @@
-# Nipzip
+# Nipzip compression
+
 My implementation of a compression algorithm written in Python 3.x using [Huffman Coding](https://en.wikipedia.org/wiki/Huffman_coding), which is commonly used for lossless compression. 
 
 Nipzip compresses and decompresses text to binary and vice versa.
