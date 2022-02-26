@@ -1,4 +1,4 @@
-# Nipzip compression
+# Nipzip File Zipper
 
 My implementation of a compression algorithm written in Python 3.x using [Huffman Coding](https://en.wikipedia.org/wiki/Huffman_coding), which is commonly used for lossless compression. 
 
